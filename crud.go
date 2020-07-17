@@ -18,34 +18,22 @@ type SearchResponse struct {
 	Error     string
 }
 
-func searchFactoryFactory(queryType string) func(interface{}, map[string]interface{}) http.HandlerFunc {
-	return func(model interface{}, opts map[string]interface{}) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			record := NewRecord(model)
-			queries := r.URL.Query()
-			if queryType == "history" {
-				queries["Id"] = []string{mux.Vars(r)["Id"]}
-			}
-			opts["queries"] = queries
-			var res Result
-			var err error
-			if queryType == "history" {
-				res, err = GetHistListByQuery(record, opts)
-			} else {
-				res, err = GetListByQuery(record, opts)
-			}
-			var status = 200
-			if err != nil {
-				status = 400
-				res["Error"] = err.Error()
-			}
-			SendObject(w, status, res)
+func searchFactory(model interface{}, opts map[string]interface{}) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		record := NewRecord(model)
+		queries := r.URL.Query()
+		opts["queries"] = queries
+		var res Result
+		var err error
+		res, err = GetListByQuery(record, opts)
+		var status = 200
+		if err != nil {
+			status = 400
+			res["Error"] = err.Error()
 		}
-	}
+		SendObject(w, status, res)
+	})
 }
-
-var searchFactory = searchFactoryFactory("")
-var searchHistFactory = searchFactoryFactory("history")
 
 func getByIdFactory(model interface{}, opts map[string]interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -56,24 +44,6 @@ func getByIdFactory(model interface{}, opts map[string]interface{}) http.Handler
 		_, err := GetById(record, opts)
 		if err != nil {
 			SendM(w, 400, "record with Id "+strconv.Itoa(Id)+" not found in table "+TableNameOf(model))
-			return
-		} else if err != nil {
-			SendM(w, 400, "Error getting record:"+err.Error())
-		}
-		SendObject(w, 200, record)
-	}
-}
-func getHistoryFactory(model interface{}, opts map[string]interface{}) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		record, _ := createHistoryRecord(model)
-		opts["queries"] = r.URL.Query()
-		Id, _ := strconv.Atoi(mux.Vars(r)["Id"])
-		opts["Id"] = Id
-		Ver, _ := strconv.Atoi(mux.Vars(r)["Ver"])
-		opts["Ver"] = Ver
-		_, err := GetHistory(record, opts)
-		if err != nil {
-			SendM(w, 400, "record with Id "+strconv.Itoa(Id)+" not found in table "+TableNameOf(model)+"_history")
 			return
 		} else if err != nil {
 			SendM(w, 400, "Error getting record:"+err.Error())

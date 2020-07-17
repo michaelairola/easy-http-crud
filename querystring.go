@@ -50,11 +50,8 @@ func parseQueryStringFactory(queryType string) func(interface{}, url.Values) (st
 			}
 			matchStr, t, hasCol := recordHasColumn(key, record)
 			if !hasCol && key != "query" {
-				warnings = append(warnings, QueryStrErr{key})
+				warnings = append(warnings, errors.New("query error!"))
 				continue
-			}
-			if queryType == "history" {
-				matchStr = "JSON_EXTRACT(data,\"$." + key + "\")"
 			}
 			var query string
 			var keyArgs []interface{}
@@ -95,7 +92,6 @@ func parseQueryStringFactory(queryType string) func(interface{}, url.Values) (st
 }
 
 var ParseQueryStr = parseQueryStringFactory("")
-var ParseHistQueryStr = parseQueryStringFactory("history")
 
 func parseIntQuery(matchStr string, matches []string) (string, []interface{}, []error) {
 	var queries []string

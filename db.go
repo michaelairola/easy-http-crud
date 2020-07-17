@@ -28,12 +28,7 @@ func TxToDbConverter(fn TxFunc) DbFunc {
 		result := make(Result)
 		var db *gorm.DB
 		var err error
-		isTesting, _ := opts["testing"].(bool)
-		if DevMode && isTesting {
-			db, err = CreateTestDb()
-		} else {
-			db, err = OpenDb()
-		}
+		db, err = OpenDb()
 		if err != nil {
 			fmt.Println("DB CONNECTION: ", err)
 			return result, errors.New("There was a problem connecting to the database. Please try again in 10-15 minutes.")

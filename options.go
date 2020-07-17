@@ -42,7 +42,7 @@ func establishPreloads(tx *gorm.DB, record interface{}, opts map[string]interfac
 func establishTxScope(tx *gorm.DB, record interface{}, opts Options) *gorm.DB {
 	db := tx
 	debug, ok := opts["Debug"].(bool)
-	if (ok && debug) || Debug {
+	if ok && debug {
 		db = db.Debug()
 	}
 	db = establishPreloads(db, record, opts)

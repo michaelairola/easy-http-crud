@@ -13,6 +13,20 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type HasTableName interface {
+	TableName() string
+}
+
+func TableNameOf(model interface{}) string {
+	tableNameModel, ok := model.(HasTableName)
+	if ok {
+		return tableNameModel.TableName()
+	}
+	modelV := getReflectValue(model)
+
+	return gorm.ToTableName(modelV.Type().Name())
+}
+
 func NewRecord(record interface{}) interface{} {
 	return reflect.New(reflect.TypeOf(record).Elem()).Interface()
 }

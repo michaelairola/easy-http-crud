@@ -22,29 +22,16 @@ func GetListByQueryTxFactory(queryType string) func(*gorm.DB, interface{}, Optio
 		var record interface{}
 		var db *gorm.DB
 		var err error
-		if queryType == "history" {
-			record, err = createHistoryRecord(model)
-			if err != nil {
-				return result, err
-			}
-		} else {
-			record = model
-		}
+		record = model
 		records := NewRecordSlice(record)
 
 		opts = mergeOptsWithQueries(opts)
 		db = establishTxScope(tx, record, opts)
-		if queryType != "history" {
-			db = checkForUnscoped(db, opts["queries"].(url.Values))
-		}
 
 		queries := opts["queries"].(url.Values)
 		var ParseFn func(interface{}, url.Values) (string, []interface{}, string, int, int, []error)
-		if queryType == "history" {
-			ParseFn = ParseHistQueryStr
-		} else {
-			ParseFn = ParseQueryStr
-		}
+		ParseFn = ParseQueryStr
+
 		queryStr, args, order, page, pageLimit, warnings := ParseFn(model, queries)
 		db = db.Table(TableNameOf(record))
 		if order != "" {
@@ -129,10 +116,6 @@ func CreateTx(tx *gorm.DB, record interface{}, opts Options) (Result, error) {
 	if err != nil {
 		return result, err
 	}
-	err = saveHistory(db, record)
-	if err != nil {
-		return result, err
-	}
 	result["Record"] = record
 	return result, nil
 }
@@ -186,10 +169,6 @@ func UpdateTx(tx *gorm.DB, record interface{}, opts Options) (Result, error) {
 	if err = db.Save(record).Error; err != nil {
 		return result, err
 	}
-	err = saveHistory(db, record)
-	if err != nil {
-		return result, err
-	}
 	result["Record"] = record
 	return result, nil
 }
@@ -225,10 +204,6 @@ func DeleteByIdTx(tx *gorm.DB, record interface{}, opts Options) (Result, error)
 	if err != nil {
 		return result, err
 	}
-	err = saveHistory(tx, record)
-	if err != nil {
-		return result, err
-	}
 	result["record"] = record
 	return result, nil
 }
@@ -250,19 +225,5 @@ func MergeRecordsTx(tx *gorm.DB, record interface{}, opts Options) (Result, erro
 	if err != nil {
 		return res, err
 	}
-	err = saveHistory(tx, record)
 	return res, err
-}
-
-func saveHistory(db *gorm.DB, record interface{}) error {
-	if hasHistory(record) {
-		histRecord, err := createHistoryRecord(record)
-		if err != nil {
-			return err
-		}
-		if err = db.Save(histRecord).Error; err != nil {
-			return err
-		}
-	}
-	return nil
 }
